@@ -32,8 +32,26 @@ def encode_plugin_info(k, plugin)->str:
         plugin_["Label"] = f"插件[{k}]不需要高级参数。"
     return to_cookie_str(plugin_)
 
+# 假设我们有一个简单的用户数据库
+USER_DATABASE = {
+    "admin": "password123"
+}
+
+def validate_login(username, password):
+    return USER_DATABASE.get(username) == password
+
+
+
 def main():
     import gradio as gr
+
+    # 登录界面
+    def login(username, password):
+        if validate_login(username, password):
+            return gr.update(visible=False), gr.update(visible=True)  # 隐藏登录框，显示主界面
+        else:
+            return "登录失败，请检查用户名和密码！", gr.update(visible=False)
+
     if gr.__version__ not in ['3.32.12']:
         raise ModuleNotFoundError("使用项目内置Gradio获取最优体验! 请运行 `pip install -r requirements.txt` 指令安装内置Gradio及其他依赖, 详情信息见requirements.txt.")
 
@@ -97,6 +115,22 @@ def main():
     predefined_btns = {}
     from shared_utils.cookie_manager import make_cookie_cache, make_history_cache
     with gr.Blocks(title="GPT 学术优化", theme=set_theme, analytics_enabled=False, css=advanced_css) as app_block:
+         
+        with gr.Row(visible=True) as login_row:  # 初始显示登录框
+            gr.Markdown("## 登录")
+            username_input = gr.Textbox(label="用户名", placeholder="输入用户名")
+            password_input = gr.Textbox(label="密码", type="password", placeholder="输入密码")
+            login_btn = gr.Button("登录")
+            login_message = gr.Markdown("")  # 用于显示登录消息
+
+            # 登录按钮的回调
+            login_btn.click(login, inputs=[username_input, password_input], outputs=[login_message, login_row])
+
+            # 主界面内容，初始隐藏
+            with gr.Row(visible=False) as main_row:
+                gr.Markdown("## 欢迎来到主界面！")
+
+
         gr.HTML(title_html)
         secret_css = gr.Textbox(visible=False, elem_id="secret_css")
         register_advanced_plugin_init_arr = ""
